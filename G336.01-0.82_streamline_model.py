@@ -250,7 +250,7 @@ def fit_streamer(data: ObsData, model: ModelPars, outdir: Path):
             omega0 = np.sqrt(rc * ct.G * model.Mstar) / r0**2
             omega0 = omega0.to(1 / u.s)
             if np.abs(rmin - r0) < 100*u.au:
-                r_step = 1
+                r_step = 0.1
             else:
                 r_step = 10
 
@@ -295,7 +295,8 @@ if __name__ == '__main__':
     basedir = Path('/data/share/dihca2/combined_projects')
     results = basedir / 'results/G336.01-0.82/c8c9/CH3OH'
     regions = basedir / 'scripts/configs/pvmaps/regions'
-    figures = results / 'streamer_south_models_incl65_cb500_rout2500_v02'
+    #figures = results / 'streamer_south_models_incl65_cb500_rout2500_v02'
+    figures = results / 'refined_inner_streamer' / 'streamer_north_models_incl65_cb475_rout500_v0'
     moment0 = results / 'CH3OH_18_3_15_-17_4_14_A_vt_0_b6_c8c9_spw0_520_590_width40_nsig3.subcube.moment0.fits'
     moment1 = results / 'CH3OH_18_3_15_-17_4_14_A_vt_0_b6_c8c9_spw0_520_590_width40_nsig3.subcube.moment1.fits'
     continuum = (basedir / 'manual_selfcal' /
@@ -334,28 +335,31 @@ if __name__ == '__main__':
     #    np.array([0]) * u.km/u.s,
     #)
     # Small scale refinement
-    #north_pars = FitPars(
-    #    np.array([475]) * u.au,
-    #    np.array([500]) * u.au,
-    #    np.array([475]) * u.au,
-    #    np.array([85, 86, 87, 88, 89, 90]) * u.deg,
-    #    np.array([150, 155, 160, 165, 170, 175, 180, 185, 190, 195]) * u.deg,
-    #    np.array([0]) * u.km/u.s,
-    #)
-    south_pars = FitPars(
+    north_pars = FitPars(
+        np.array([475]) * u.au,
         np.array([500]) * u.au,
-        #np.array([1000, 1500, 2000, 2500, 3000]) * u.au,
-        np.array([2000, 2500, 3000, 3500, 4000]) * u.au,
-        np.array([500]) * u.au,
-        #np.array([40, 50, 60, 70]) * u.deg,
-        np.array([50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]) * u.deg,
-        #np.array([10, 20, 30, 40, 50, 60, 70, 80, 90, 110, 120]) * u.deg,
-        #np.array([255, 260, 265, 270, 275]) * u.deg,
-        #np.array([265, 270, 275, 280]) * u.deg,
-        np.array([270, 275, 280, 285, 290, 295, 300]) * u.deg,
-        #np.array([0, 2]) * u.km/u.s,
-        np.array([2]) * u.km/u.s,
+        np.array([475]) * u.au,
+        #np.array([85, 86, 87, 88, 89, 90]) * u.deg,
+        #np.array([150, 155, 160, 165, 170, 175, 180, 185, 190, 195]) * u.deg,
+        # For best
+        np.array([89]) * u.deg,
+        np.array([155]) * u.deg,
+        np.array([0]) * u.km/u.s,
     )
+    #south_pars = FitPars(
+    #    np.array([500]) * u.au,
+    #    #np.array([1000, 1500, 2000, 2500, 3000]) * u.au,
+    #    np.array([2000, 2500, 3000, 3500, 4000]) * u.au,
+    #    np.array([500]) * u.au,
+    #    #np.array([40, 50, 60, 70]) * u.deg,
+    #    np.array([50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]) * u.deg,
+    #    #np.array([10, 20, 30, 40, 50, 60, 70, 80, 90, 110, 120]) * u.deg,
+    #    #np.array([255, 260, 265, 270, 275]) * u.deg,
+    #    #np.array([265, 270, 275, 280]) * u.deg,
+    #    np.array([270, 275, 280, 285, 290, 295, 300]) * u.deg,
+    #    #np.array([0, 2]) * u.km/u.s,
+    #    np.array([2]) * u.km/u.s,
+    #)
     model_pars = ModelPars(
         position,
         distance,
@@ -365,8 +369,8 @@ if __name__ == '__main__':
         (90 - 65) * u.deg,
         (125 + 90) * u.deg,
         #components={'north': north_pars, 'south': south_pars},
-        #components={'north': north_pars},
-        components={'south': south_pars},
+        components={'north': north_pars},
+        #components={'south': south_pars},
         ranges={'north': (0, 2000, -53, -44),
                 'south': (0, 2000, -47, -40)}
     )
