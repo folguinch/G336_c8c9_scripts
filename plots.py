@@ -1,18 +1,24 @@
+"""Plot data.
+
+The global parameter `plot_type` specify the subdirectory where the
+configuration files for the plot type are available. The filename of the
+configuration files follow the pattern `<source name>_<step>.cfg` or
+`<source name>_<step>_<suffix>.cfg`, where the available `step` values are
+listed in the parameter `steps`. Steps can be selected with with the `skip`
+parameters.
+"""
 from pathlib import Path
 
 from tile_plotter.plotter import plotter
 
-#from common_paths import *
+from common_paths import CONFIGS, FIGURES
 
 plot_type = 'papers'
 #plot_type = 'presentations'
 
 if __name__ == '__main__':
     # Constants
-    results = Path('/data/share/dihca2/combined_projects/results')
-    configs = Path('/data/share/dihca2/combined_projects/scripts/configs')
-    figures = Path('/data/share/dihca2/combined_projects/figures')
-    config_dir = configs / 'plots' / plot_type
+    config_dir = CONFIGS / 'plots' / plot_type
 
     # Steps
     steps = {
@@ -43,7 +49,7 @@ if __name__ == '__main__':
             config = config_dir / f'{source}_{val}.cfg'
             if config.exists():
                 print(f'Plotting {config}')
-                plotname = figures / source / plot_type / f'{val}.png'
+                plotname = FIGURES / source / plot_type / f'{val}.png'
                 plotter([f'{config}', f'{plotname}'] + flags)
             elif itercfgs := config_dir.glob(f'{source}_{val}_*.cfg'):
                 for config in itercfgs:
@@ -51,7 +57,7 @@ if __name__ == '__main__':
                     name = config.stem.split('_')
                     ind = name.index(val.split('_')[0])
                     name = '_'.join(name[ind:])
-                    plotname = figures / source / plot_type / f'{name}.png'
+                    plotname = FIGURES / source / plot_type / f'{name}.png'
                     plotter([f'{config}', f'{plotname}'] + flags)
             else:
                 print(f'Skipping: {config}')
