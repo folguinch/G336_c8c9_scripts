@@ -8,7 +8,7 @@ The scripts have been run with the following packages:
 
 - CASA (v)
 - [tile_plotter](https://github.com/folguinch/tile_plotter) (v)
-- []()
+- [GoContinuum](https://github.com/folguinch/GoContinuum) (v3.0.0)
 
 
 ## Scripts for published results
@@ -17,5 +17,9 @@ The following scripts were used to produce the results in Olguin et al. (2025):
 
 - `G336_c8c9_workfkow.ipynb`: Steps for processing and extracting the final visibilities.
 - `G336.018-0.827_selfcal_c8c9.py`: Steps followed for selfcalibration. Results for each step are listed in `G336.018-0.827_selfcal_c8c9.md`.
-- ``
-- `plots.py`: Generate paper plots.
+- `G336.018-0.827_clean_automasking_briggs.py`: Generates the continuum images (including pbcor).
+- `source_pipeline.py`: Process the data cubes for CH3OH and SO to obtain moment and pv maps.
+- `keplerian_pvmap_northern.py`: Generates and plots the pv map for the blue-shifted streamer.
+- `plots.py`: Generate most of the paper plots.
+
+To produce the contsub and line-free continuum vibilities we used `GoContinuum` with the configuration file `config/reduction/G336.018-0.827.cfg`.
