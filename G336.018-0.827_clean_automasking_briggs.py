@@ -6,13 +6,14 @@ Antennae stats: 20%ile=1437.7m
                 75%ile=6216.9m
                 90%ile=8491.2m
 """
+from pathlib import Path
+
 from casatasks import tclean, exportfits
 from astropy.io import fits
 from astropy.stats import mad_std
 
 imsize = 14400
 cell = '0.004arcsec'
-#nsigma = 1.25
 vis = '../uvdata/G336.018-0.827.c8c9.selfcal.cvel.cont_avg.ms'
 tclean_args = {'vis': vis,
                'imsize': imsize,
@@ -34,7 +35,7 @@ tclean_args = {'vis': vis,
                'fastnoise': True,
                'pbcor': True,
                }
-imagedir = '../data/auto_continuum'
+imagedir = '../data/continuum/'
 imagebase = ('G336.018-0.827.c8c9.selfcal.cvel.cont_avg'
              f".{tclean_args['deconvolver']}"
              f".{tclean_args['weighting']}")
@@ -45,7 +46,8 @@ if tclean_args['weighting'] == 'briggs':
 tclean_args['imagename'] = imagedir + imagebase
 imagename = Path(tclean_args['imagename'] + '.image')
 if not imagename.exists():
-    tclean(robust=robust, **tclean_args)
+    imagename.parent.mkdir(parents=True, exist_ok=True)
+    tclean(**tclean_args)
 
 # Export FITS
 print('Exporting images')
