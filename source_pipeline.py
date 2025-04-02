@@ -7,13 +7,10 @@ from pathlib import Path
 import sys
 
 from astro_source.source import Source
-#from line_little_helper.scripts.cassis_rebuild_map import rebuild_map
-from line_little_helper.moving_moments import main as moving_moments
-#from line_little_helper.scripts.spectrum_helper import spectrum_helper
+from line_little_helper.moving_moments import moving_moments
 from line_little_helper.line_peak_map import line_peak_map
 from line_little_helper.molecule import NoTransitionError
 from line_little_helper.pvmap_extractor import pvmap_extractor
-from line_little_helper.pvmap_fitter import pvmap_fitter
 from line_little_helper.subcube_extractor import subcube_extractor
 from line_little_helper.symmetric_moments import symmetric_moments
 from line_little_helper.utils import normalize_qns
