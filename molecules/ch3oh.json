@@ -1,0 +1,95 @@
+{
+    "name": "CH3OH",
+    "transitions": [
+        {
+            "species": "CH3OH vt=0-2",
+            "qns": "18(3,16)-17(4,13)A,vt=0",
+            "restfreq": 232.783446,
+            "restfreq_unit": "GHz",
+            "logaij": -4.66453,
+            "obsfreq": null,
+            "eup": 446.5321,
+            "eup_unit": "K"
+        },
+        {
+            "species": "CH3OH vt=0-2",
+            "qns": "4(2,3)-5(1,4)A,vt=0",
+            "restfreq": 234.68337,
+            "restfreq_unit": "GHz",
+            "logaij": -4.72723,
+            "obsfreq": null,
+            "eup": 60.92292,
+            "eup_unit": "K"
+        },
+        {
+            "species": "CH3OH vt=0-2",
+            "qns": "5(4,2)-6(3,3)E,vt=0",
+            "restfreq": 234.698519,
+            "restfreq_unit": "GHz",
+            "logaij": -5.19799,
+            "obsfreq": null,
+            "eup": 122.7215,
+            "eup_unit": "K"
+        },
+        {
+            "species": "CH3OH vt=0-2",
+            "qns": "18(3,15)-17(4,14)A,vt=0",
+            "restfreq": 233.795666,
+            "restfreq_unit": "GHz",
+            "logaij": -4.65801,
+            "obsfreq": null,
+            "eup": 446.57967,
+            "eup_unit": "K"
+        },
+        {
+            "species": "CH3OH vt=0-2",
+            "qns": "10(2,9)-9(3,6)A,vt=0",
+            "restfreq": 231.28111,
+            "restfreq_unit": "GHz",
+            "logaij": -4.73726,
+            "obsfreq": null,
+            "eup": 165.34762,
+            "eup_unit": "K"
+        },
+        {
+            "species": "CH3OH vt=0-2",
+            "qns": "10(2,8)-9(3,7)A,vt=0",
+            "restfreq": 232.418521,
+            "restfreq_unit": "GHz",
+            "logaij": -4.72869,
+            "obsfreq": null,
+            "eup": 165.40149,
+            "eup_unit": "K"
+        },
+        {
+            "species": "CH3OH vt=0-2",
+            "qns": "4(-2,3)-3(-1,2)E,vt=0",
+            "restfreq": 218.440063,
+            "restfreq_unit": "GHz",
+            "logaij": -4.3292,
+            "obsfreq": null,
+            "eup": 45.45944,
+            "eup_unit": "K"
+        },
+        {
+            "species": "CH3OH vt=0-2",
+            "qns": "5(-1,4)-4(-2,3)E,vt=0",
+            "restfreq": 216.945521,
+            "restfreq_unit": "GHz",
+            "logaij": -4.91591,
+            "obsfreq": null,
+            "eup": 55.87116,
+            "eup_unit": "K"
+        },
+        {
+            "species": "CH3OH vt=0-2",
+            "qns": "20(-1,19)-20(-0,20)E,vt=0",
+            "restfreq": 217.886504,
+            "restfreq_unit": "GHz",
+            "logaij": -4.47128,
+            "obsfreq": null,
+            "eup": 508.37554,
+            "eup_unit": "K"
+        }
+    ]
+}
