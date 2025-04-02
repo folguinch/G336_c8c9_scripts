@@ -1,3 +1,7 @@
+"""Compute subproducts from data cubes.
+
+Not all the steps run were published.
+"""
 from configparser import ConfigParser
 from pathlib import Path
 import sys
@@ -16,82 +20,81 @@ from line_little_helper.utils import normalize_qns
 from tile_plotter.plotter import plotter
 
 
-#from common_paths import *
+from common_paths import MOL_DIR, CONFIGS, RESULTS, FIGURES
 
 # Recommended line lists
 LINE_LISTS = {
-    '(13)CO': 'JPL',
-    'H2CO': 'JPL',
-    'SiO': 'JPL',
-    'Hα': 'Recomb',
-    'CH3CN': 'JPL',
-    '(13)CH3CN': 'CDMS',
+#    '(13)CO': 'JPL',
+#    'H2CO': 'JPL',
+#    'SiO': 'JPL',
+#    'Hα': 'Recomb',
+#    'CH3CN': 'JPL',
+#    '(13)CH3CN': 'CDMS',
     'CH3OH': 'CDMS',
-    '(13)CH3OH': 'CDMS',
-    'CH3CHO': 'SLAIM',
-    'CH3OCHO': 'SLAIM',
-    'HNCO': 'CDMS',
+#    '(13)CH3OH': 'CDMS',
+#    'CH3CHO': 'SLAIM',
+#    'CH3OCHO': 'SLAIM',
+#    'HNCO': 'CDMS',
     'SO': 'JPL',
-    'SO2': 'CDMS',
-    'HC3N': 'CDMS',
-    'NH2CHO': 'CDMS',
+#    'SO2': 'CDMS',
+#    'HC3N': 'CDMS',
+#    'NH2CHO': 'CDMS',
 }
 
 # Molecules and transitions of interest
 LINE_TRANSITIONS = {
-    'CH3OH': ['4(2,3)-5(1,4)A,vt=0',       #spw0
-              '5(4,2)-6(3,3)E,vt=0',
+    'CH3OH': [#'4(2,3)-5(1,4)A,vt=0',       #spw0
+              #'5(4,2)-6(3,3)E,vt=0',
               '18(3,15)-17(4,14)A,vt=0',
-              '10(2,9)-9(3,6)A,vt=0',      #spw1
-              '10(2,8)-9(3,7)A,vt=0',
-              '18(3,16)-17(4,13)A,vt=0',
-              '4(-2,3)-3(-1,2)E,vt=0',      #spw2
-              '5(-1,4)-4(-2,3)E,vt=0',
-              '20(-1,19)-20(-0,20)E,vt=0',
-              '8(-0,8)-7(-1,6)E,vt=0',     #spw3
-              '23(-5,18)-22(-6,17)E,vt=0',
-              '25(-3,23)-24(-4,20)E,vt=0',
-              '6(1,5)-7(2,6)--,vt=1',      # other
-              '13(3,10)-14(4,10)A,vt=2',
-              '34(-13,22)-33(-11,22)E,vt=0-vt=1',
+              #'10(2,9)-9(3,6)A,vt=0',      #spw1
+              #'10(2,8)-9(3,7)A,vt=0',
+              #'18(3,16)-17(4,13)A,vt=0',
+              #'4(-2,3)-3(-1,2)E,vt=0',      #spw2
+              #'5(-1,4)-4(-2,3)E,vt=0',
+              #'20(-1,19)-20(-0,20)E,vt=0',
+              #'8(-0,8)-7(-1,6)E,vt=0',     #spw3
+              #'23(-5,18)-22(-6,17)E,vt=0',
+              #'25(-3,23)-24(-4,20)E,vt=0',
+              #'6(1,5)-7(2,6)--,vt=1',      # other
+              #'13(3,10)-14(4,10)A,vt=2',
+              #'34(-13,22)-33(-11,22)E,vt=0-vt=1',
               ],
-    '(13)CH3OH': [#'10(2,8)-9(3,7)++',
-                  '5(1,5)-4(1,4)++'],
-    'CH3CN': [#'12(0)-11(0)',
-              #'12(1)-11(1)',
-              '12(2)-11(2)',
-              '12(3)-11(3)',
-              '12(4)-11(4)',
-              '12(8)-11(8)'],
-    '(13)CH3CN': ['13(3)-12(3)',
-                  '13(4)-12(4)'],
-    'CH3CHO': ['2(2,0)-3(1,3)A++,vt=2'],
-    'HNCO': ['28(1,28)-29(0,29)',
-             '10(3,8)-9(3,7)',
-             '10(0,10)-9(0,9)'],
-    'CH3OCHO': ['20(0,20)-19(0,19)A',
-                '32(9,24)-32(8,25)E',
-                '48(14,35)-47(15,32)E'],
-    'SiO': ['5-4'],
+    #'(13)CH3OH': [#'10(2,8)-9(3,7)++',
+    #              '5(1,5)-4(1,4)++'],
+    #'CH3CN': [#'12(0)-11(0)',
+    #          #'12(1)-11(1)',
+    #          '12(2)-11(2)',
+    #          '12(3)-11(3)',
+    #          '12(4)-11(4)',
+    #          '12(8)-11(8)'],
+    #'(13)CH3CN': ['13(3)-12(3)',
+    #              '13(4)-12(4)'],
+    #'CH3CHO': ['2(2,0)-3(1,3)A++,vt=2'],
+    #'HNCO': ['28(1,28)-29(0,29)',
+    #         '10(3,8)-9(3,7)',
+    #         '10(0,10)-9(0,9)'],
+    #'CH3OCHO': ['20(0,20)-19(0,19)A',
+    #            '32(9,24)-32(8,25)E',
+    #            '48(14,35)-47(15,32)E'],
+    #'SiO': ['5-4'],
     'SO': ['6(5)-5(4)'],
-    'SO2': ['59(14,46)-60(13,47)',
-            '28(3,25)-28(2,26)',
-            '99(9,91)-98(10,88)',
-            '94(21,73)-95(20,76)'],
-    'HC3N': ['J=24-23,l=0',
-             'J=24-23,l=2e',
-             'J=24-23,l=1f'],
-    'NH2CHO': ['11(2,10)-10(2,9)'],
+    #'SO2': ['59(14,46)-60(13,47)',
+    #        '28(3,25)-28(2,26)',
+    #        '99(9,91)-98(10,88)',
+    #        '94(21,73)-95(20,76)'],
+    #'HC3N': ['J=24-23,l=0',
+    #         'J=24-23,l=2e',
+    #         'J=24-23,l=1f'],
+    #'NH2CHO': ['11(2,10)-10(2,9)'],
 }
 
 # Saved molecules
-MOL_DIR = Path('/data/share/binary_project/scripts/molecules')
 SAVED_MOLS = {
     'CH3OH': MOL_DIR / 'ch3oh.json',
-    'CH3CN': MOL_DIR / 'ch3cn.json',
-    '(13)CH3OH': MOL_DIR / '13ch3oh.json',
-    '(13)CH3CN': MOL_DIR / '13ch3cn.json',
-    'SiO': MOL_DIR / 'sio.json',
+    #'CH3CN': MOL_DIR / 'ch3cn.json',
+    #'(13)CH3OH': MOL_DIR / '13ch3oh.json',
+    #'(13)CH3CN': MOL_DIR / '13ch3cn.json',
+    #'SiO': MOL_DIR / 'sio.json',
     'SO': MOL_DIR / 'so.json',
 }
 
@@ -197,10 +200,6 @@ def moments(source,
             configs,
             figures,
             array,
-            #molecules=['CH3CN', '(13)CH3CN', '(13)CH3OH', 'CH3CHO', 'HNCO',
-            #           'CH3OCHO', 'SO2', 'HC3N', 'CH3OH', 'NH2CHO'],
-            #molecules=['(13)CH3OH', 'CH3OH'],
-            #molecules=['HC3N'],
             molecules=['CH3OH'],
             qns_mol=LINE_TRANSITIONS,
             half_width=20,
@@ -297,27 +296,14 @@ def pv_streams(pvconfig, source, outdir, figures, array):
     if len(pvmaps) == 0:
         pvmaps = pv_extractor(pvconfig, source, pvout)
 
-    # Fit gradient
-    #plotname = figures / source.name / array / 'pvmaps_streams.png'
-    #flags = ['--bunit', 'mJy/beam', '--outdir', f'{pvout}', '--plotname',
-    #         f'{plotname}']
-    #print(pvmaps)
-    #pvmap_fitter(list(map(str, pvmaps)) + flags)
-
 def pv_rotation(pvconfig, source, outdir, figures, array):
     pvout = outdir / 'pvmaps'
     pvmaps = pv_extractor(pvconfig, source, pvout, recenter=True)
 
-    # Fit gradient
-    #plotname = figures / source.name / array / f'{pvconfig.stem}.png'
-    #flags = ['--bunit', 'mJy/beam', '--outdir', f'{pvout}', '--plotname',
-    #         f'{plotname}', '--function', 'plot']
-    #pvmap_fitter(list(map(str, pvmaps)) + flags)
-
 def split_moments(source, outdir, configs, figures, array,
-                  #molecules=['SiO', 'SO'],
                   molecules=['SO'],
-                  chansep=9, chanwidth=5):
+                  chansep=9,
+                  chanwidth=5):
     # Calculate split moments
     for mol in molecules:
         configs_with_mol = search_molecule(source, mol, array)
@@ -336,59 +322,12 @@ def split_moments(source, outdir, configs, figures, array,
             dir_suff = f'{mol}_split{chansep}_{chanwidth}_{config.name}'
             moving_moments(flags + ['80', f'{outdir / dir_suff}', cube])
 
-def extract_cassis(src, outdir, configs, figures, array, mol='CH3OH'):
-    """Extract spectra for CASSIS fit."""
-    # Cubes
-    configs_with_mol = search_molecule(src, mol, array)
-    cubes = []
-    for src_cfg in configs_with_mol:
-        cubes.append(f"{src_cfg['file']}")
-
-    # Mask
-    mask = results = outdir / mol / 'source_mask.fits'
-    if not mask.exists():
-        raise IOError(f'Cannot find mask: {mask}')
-    else:
-        flags = ['--mask', f'{mask}']
-
-    # Other flags
-    spectra = outdir / mol / 'spectra'
-    spectra.mkdir(exist_ok=True)
-    flags += ['--vlsr', f'{src.vlsr.value}',
-              f'{src.vlsr.unit}'.replace(' ', ''),
-              '--outdir', f'{spectra}', '--rest',
-              '--rms', '2.6', 'mJy/beam']
-
-    spectrum_helper(cubes + flags)
-
-def cassis_to_fits(src, outdir, configs, figures, array, mol='CH3OH'):
-    """Build the fits images from CASSIS results."""
-    # Results
-    results = outdir / mol / 'spectra_lte_fit'
-    observed = outdir / mol / 'spectra'
-    maskfile = outdir / mol / 'source_mask.fits'
-
-    # Checks
-    if not results.is_dir():
-        print(f'{results} not a directory')
-        return
-    if not maskfile.exists():
-        print(f'{maskfile} does not exist')
-        return
-    
-    # Rebuild map
-    flags = ['--observed', f'{observed}', '-x']
-    rebuild_map(flags + [str(maskfile), str(results)])
-    flags = ['-e']
-    rebuild_map(flags + [str(maskfile), str(results)])
-
 def peak_maps(source,
               outdir,
               configs,
               figures,
               array,
               molecules=['CH3OH'],
-              #  qns_mol=line_transitions,
               qns_mol={'CH3OH':['18(3,15)-17(4,14)A,vt=0']},
               half_width=10):
     for mol in molecules:
@@ -433,8 +372,6 @@ def peak_maps(source,
 
 if __name__ == '__main__':
     ## Constants
-    results = Path('/data/share/dihca2/combined_projects/results')
-    configs = Path('/data/share/dihca2/combined_projects/scripts/configs')
     figures = Path('/data/share/dihca2/combined_projects/figures')
 
     # Steps
@@ -442,29 +379,26 @@ if __name__ == '__main__':
         1: moments,
         2: split_moments,
         3: pv_maps,
-        4: extract_cassis,
-        5: cassis_to_fits,
-        6: crop_line,
-        7: peak_maps,
+        4: crop_line,
+        5: peak_maps,
     }
-    skip = [ 1, 2, 4, 5, 6, 7]
+    skip = [2, 3, 4, 5]
     array = 'c8c9'
-    #array = 'concat'
 
     # Read sources from command line
     sources = ['G336.01-0.82']
 
     # Iterate over source config files
-    iterover = (configs / f'sources/{source}.cfg' for source in sources)
+    iterover = (CONFIGS / f'sources/{source}.cfg' for source in sources)
     for config in iterover:
         # Open source
         print(config)
         src = Source(config_file=config)
-        outdir = results / src.name / array
+        outdir = RESULTS / src.name / array
 
         # Run steps
         for n, func in steps.items():
             if n in skip:
                 continue
             print(f'Step {n}')
-            func(src, outdir, configs, figures, array)
+            func(src, outdir, CONFIGS, FIGURES, array)
