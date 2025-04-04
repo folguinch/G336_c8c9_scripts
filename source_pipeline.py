@@ -218,7 +218,7 @@ def moments(source,
                 norm_qns = normalize_qns(qns)
                 #cfg = f'{source.name}_{array}_{norm_mol}_{norm_qns}.cfg'
                 cfg = f'{source.name}_{norm_mol}_{norm_qns}_{suffix}.cfg'
-                cfg = configs / 'plots' / cfg
+                cfg = configs / 'plots/processing' / cfg
                 cfg.parent.mkdir(parents=True, exist_ok=True)
                 if cfg.exists():
                     continue
@@ -260,13 +260,12 @@ def moments(source,
                 plotter([f'{cfg}', f'{plotname}'])
 
 def pv_maps(source, outdir, configs, figures, array):
-    # Search for configs
+    # Streamers pv
     streams = configs / f'pvmaps/{source.name}_streams.cfg'
-    #rotation = configs / f'pvmaps/{source.name}_rotation.cfg'
     if streams.is_file():
         pv_streams(streams, source, outdir, figures, array)
-    #if rotation.is_file():
-    #    pv_rotation(rotation, source, outdir, figures, array)
+
+    # Rotation pvs
     configpv_rot = configs / 'pvmaps' 
     for rotation in configpv_rot.glob(f'{source.name}_rotation*.cfg'):
         try:
@@ -379,7 +378,7 @@ if __name__ == '__main__':
         4: crop_line,
         5: peak_maps,
     }
-    skip = [2, 3, 4, 5]
+    skip = [1, 2, 4, 5]
     array = 'c8c9'
 
     # Read sources from command line
