@@ -2,7 +2,9 @@
 from pathlib import Path
 
 from astropy.coordinates import SkyCoord
+from astropy.io import fits
 from line_little_helper.pvmap_extractor import get_spectral_slab
+from matplotlib import font_manager
 from matplotlib.ticker import AutoMinorLocator
 from pvextractor import extract_pv_slice
 from pvextractor import Path as PVPath
@@ -13,25 +15,31 @@ import astropy.units as u
 import astropy.constants as ct
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import font_manager
 
-font_dirs = ['/usr/share/fonts/OTF/']  # The path to the custom font file.
+from common_paths import DATA, CONFIGS, RESULTS, FIGURES
+
+# Import fonts
+font_dirs = [Path('./fonts'), Path('/usr/share/fonts/OTF')]
+font_dirs = filter(lambda x: x.exists(), font_dirs)
+print('Font directories:', font_dirs)
 font_files = font_manager.findSystemFonts(fontpaths=font_dirs)
 
 for font_file in font_files:
     font_manager.fontManager.addfont(font_file)
+fonts = font_manager.get_font_names()
 
-#plt.rcParams['font.sans-serif'] = 'Myriad Pro'
+# Plot styles
+styles = ['science_double_col', 'inferno']
+if 'Myriad Pro' in fonts:
+    print('Using Myriad style')
+    styles.append('science_myriad')
 
 # Directories
-umbriel = Path('/mnt/Umbriel/G336_combined_c8c9/scripts/configs/pvmaps')
-#cube = Path(('/mnt/Umbriel/binary_project/G336.01-0.82/'
-#             'combined_projects/yclean_c8c9/yclean_CH3OH_spw0/'
-#             'G336.018-0.827_spw0_robust2_multiscale/'
-#             'autoG336.018-0.827_spw0.tc_final.image.fits'))
-basedir = Path('/home/faoch/research/G336_combined_c8c9')
-cube = basedir / 'data/G336.018-0.827_spw0.tc_final.multiscale.robust2.image.subim.fits'
-region = umbriel / 'regions' / 'G336_north_streamer_inverted.crtf'
+cube = DATA / 'cubes/G336.018-0.827_spw0_CH3OH_robust2_multiscale.image.fits'
+pvmap_file = (RESULTS / 'G336.01-0.82/c8c9/pvmaps' /
+              'G336_north_streamer_inverted_CH3OH_spw0.fits')
+region = CONFIGS / 'pvmaps/regions/G336_north_streamer_inverted.crtf'
+figures = FIGURES / 'G336.01-0.82/c8c9/paper'
 
 # Source parameters
 source = SkyCoord('16h35m09.2587s -48d46m47.657s', frame='icrs')
@@ -39,7 +47,6 @@ mass = 10 * u.M_sun
 incl = 65 * u.deg
 pa = 125 * u.deg
 rcb = 250 * u.au
-#avg_radius = 0.026 * u.arcsec
 distance = 3.1 * u.kpc
 vlsr = -47.2 * u.km / u.s
 rot = -1
@@ -53,9 +60,11 @@ width = 0.04 * u.arcsec
 freq_slab = 28 * u.MHz
 
 # Slab
-cube = cube.with_spectral_unit(u.km/u.s, velocity_convention='radio',
-                               rest_value=line_freq)
-cube = get_spectral_slab(cube, line_freq, freq_slab, vlsr=vlsr)
+if not pvmap_file.exists():
+    cube = cube.with_spectral_unit(u.km/u.s,
+                                   velocity_convention='radio',
+                                   rest_value=line_freq)
+    cube = get_spectral_slab(cube, line_freq, freq_slab, vlsr=vlsr)
 
 # Read region
 reg = Regions.read(region, format='crtf').pop()
@@ -94,7 +103,12 @@ proj_vel_ire = (vel_rot * np.sin(incl) * np.cos(phi) +
 proj_vel_ire[deproj_d < rcb] = proj_vel_kp[deproj_d < rcb]
 
 # PV map
-pv_map = extract_pv_slice(cube, pv_path)
+if pvmap_file.exists():
+    print('Opening pv file')
+    pv_map = fits.open(pvmap_file)[0]
+else:
+    print('Calculating pv from cube')
+    pv_map = extract_pv_slice(cube, pv_path)
 extent = get_extent(pv_map)
 extent = [extent[0].to(u.arcsec).value * distance.to(u.pc).value,
           extent[1].to(u.arcsec).value * distance.to(u.pc).value,
@@ -114,8 +128,7 @@ fontsize = 8
 ratio = 11 / 5
 width = 5.67
 height = 2.9
-plt.style.use(['science_double_col', 'inferno'])
-#fig, ax = plt.subplots(1, figsize=(width, height))
+plt.style.use(styles)
 fig = plt.figure(figsize=(width, height))
 ax = fig.add_axes((0.08, 0.12, 0.91, 0.77))
 ax.imshow(pv_map.data, extent=extent, origin='lower')
@@ -147,6 +160,5 @@ secax.xaxis.set_minor_locator(AutoMinorLocator())
 secax.set_xlabel('Deprojected radial distance to source (au)')
 secax.tick_params(length=4, color='w')
 secax.tick_params(length=2.5, color='w', which='minor')
-#plt.ylim(5, 10)
-fig.savefig(basedir / 'figures/keplerian_pv.png')#, bbox_inches='tight')
-fig.savefig(basedir / 'figures/keplerian_pv.pdf')#, bbox_inches='tight')
+fig.savefig(figures / 'keplerian_pv_northern.png')
+fig.savefig(figures / 'keplerian_pv_northern.pdf')

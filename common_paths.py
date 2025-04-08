@@ -1,6 +1,7 @@
 from pathlib import Path
 
-CONTINUUM = Path('../data/continuum')
+DATA = Path('../data')
+CONTINUUM = DATA / 'continuum'
 RESULTS = Path('../results')
 FIGURES = Path('../figures')
 CONFIGS = Path('./configs')
