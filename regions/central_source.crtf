@@ -1,0 +1,2 @@
+#CRTFv0
+circle[[248.7885782329deg, -48.7799044443deg], 0.05arcsec] coord=ICRS, corr=[I], linewidth=1, linestyle=-, symsize=1, symthick=1, color=white, font="DejaVu Sans", fontsize=11, fontstyle=normal, usetex=false
