@@ -1,3 +1,7 @@
+"""Export streamer model in 3-D cartesian space.
+
+This can be used to plot the model in 3-D. Not used in the paper.
+"""
 from pathlib import Path
 
 import astropy.units as u
