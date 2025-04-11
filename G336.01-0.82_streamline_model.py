@@ -1,4 +1,9 @@
-"""Calculate streamer models."""
+"""Calculate streamer models.
+
+Some of the functions were taken from the original implemetation of
+velocity_tools. Part of the code is a work in progress to fit a streamer, but
+the engine to calculate streamer models is working.
+"""
 from typing import Dict, Optional, Tuple
 from itertools import product
 from pathlib import Path
@@ -12,7 +17,6 @@ from matplotlib.collections import LineCollection
 from regions import Regions, PolygonSkyRegion
 from scipy import stats
 from tile_plotter.multi_plotter import OTFMultiPlotter
-#import aplpy
 import astropy.constants as ct
 import astropy.units as u
 import numpy as np
@@ -23,6 +27,8 @@ import matplotlib.patheffects as pe
 import pickle
 import velocity_tools.coordinate_offsets as c_offset
 import velocity_tools.stream_lines as SL
+
+from common_paths import RESULTS, CONFIGS, CONTINUUM
 
 @dataclass
 class FitPars:
@@ -221,6 +227,8 @@ def convert_into_mili(file_name):
     return fits.PrimaryHDU(data=data*1e3, header=hd)
 
 def fit_streamer(data: ObsData, model: ModelPars, outdir: Path):
+    """Fit a streamer (work in progress).
+    """
     # Iterate components
     for name, component in model:
         print(f'Fitting component: {name}')
@@ -241,18 +249,22 @@ def fit_streamer(data: ObsData, model: ModelPars, outdir: Path):
         for fname, vals in component:
             # Output region
             reg_name = outdir / 'regions' / f'stream_{name}_{fname}.crtf'
+            reg_name.parent.mkdir(parents=True, exist_ok=True)
             if reg_name.exists():
                 print(f'Skipping {fname}: already calculated')
                 continue
 
             # Parameters
             rmin, r0, rc, theta0, phi0, v_r0 = vals
+            if rmin != rc:
+                print('Skipping model with rmin=', rmin, ' and rc=', rc)
+                continue
             omega0 = np.sqrt(rc * ct.G * model.Mstar) / r0**2
             omega0 = omega0.to(1 / u.s)
             if np.abs(rmin - r0) < 100*u.au:
-                r_step = 0.1
+                r_step = 0.1 * u.au
             else:
-                r_step = 10
+                r_step = 10 * u.au
 
             # Stream model
             (dra, _, ddec), (_, vel, _) = SL.xyz_stream(
@@ -265,7 +277,7 @@ def fit_streamer(data: ObsData, model: ModelPars, outdir: Path):
                 inc=model.inc,
                 pa=model.PA_ang,
                 rmin=rmin,
-                step=r_step,
+                deltar=r_step,
             )
             d_sky_au = np.sqrt(dra**2 + ddec**2)
 
@@ -292,36 +304,86 @@ def fit_streamer(data: ObsData, model: ModelPars, outdir: Path):
             plot_stream_map(data, fil, vel, fig_name, model.v_lsr)
 
 if __name__ == '__main__':
-    basedir = Path('/data/share/dihca2/combined_projects')
-    results = basedir / 'results/G336.01-0.82/c8c9/CH3OH'
-    regions = basedir / 'scripts/configs/pvmaps/regions'
-    #figures = results / 'streamer_south_models_incl65_cb500_rout2500_v02'
-    figures = results / 'refined_inner_streamer' / 'streamer_north_models_incl65_cb475_rout500_v0'
-    moment0 = results / 'CH3OH_18_3_15_-17_4_14_A_vt_0_b6_c8c9_spw0_520_590_width40_nsig3.subcube.moment0.fits'
-    moment1 = results / 'CH3OH_18_3_15_-17_4_14_A_vt_0_b6_c8c9_spw0_520_590_width40_nsig3.subcube.moment1.fits'
-    continuum = (basedir / 'manual_selfcal' /
-                 'G336.018-0.827.4.cont.image.fits')
+    # Directories
+    results = RESULTS / 'G336.01-0.82/c8c9/CH3OH'
+    moment1 = (results /
+               ('CH3OH_18_3_15_-17_4_14_A_vt_0_b6_c8c9_spw0_520_590_robust2_'
+                'multiscale_width40_nsig3.subcube.moment1.fits'))
+    continuum = (CONTINUUM /
+                 ('G336.018-0.827.c8c9.selfcal.cvel.cont_avg.hogbom.'
+                  'briggs.robust0.5.image.fits'))
+    #regions = basedir / 'scripts/configs/pvmaps/regions'
+    #moment0 = results / 'CH3OH_18_3_15_-17_4_14_A_vt_0_b6_c8c9_spw0_520_590_width40_nsig3.subcube.moment0.fits'
 
-    # Streamers
-    region_files = [regions / 'north_streamer_5sigma_poly.crtf',
-                    regions / 'south_streamer_5sigma_poly.crtf']
+    ## Streamers
+    #region_files = [regions / 'north_streamer_5sigma_poly.crtf',
+    #                regions / 'south_streamer_5sigma_poly.crtf']
 
-    # Load data
+    # Fit pars
+    # For parameter exploration
+    #streamers = ['north_outer', 'north_inner']
+    # For best models
+    streamers = ['north_outer', 'north_inner', 'north_outer_best',
+                 'north_inner_best', 'south_best']
+    stream_params = {
+        'north_outer': FitPars(
+            np.array([400, 450, 500, 550, 600]) * u.au,
+            np.array([2500]) * u.au,
+            np.array([400, 450, 500, 550, 600]) * u.au,
+            np.array([75, 80, 85]) * u.deg,
+            np.array([50, 55, 60, 65, 70]) * u.deg,
+            np.array([0]) * u.km/u.s,
+        ),
+        'north_inner': FitPars(
+            #np.array([200, 300, 400, 450, 470, 475, 480]) * u.au,
+            np.array([475]) * u.au,
+            np.array([500]) * u.au,
+            np.array([475]) * u.au,
+            np.array([85, 86, 87, 88, 89, 90]) * u.deg,
+            np.array([150, 155, 160, 165, 170, 175, 180, 185, 190, 195]) * u.deg,
+            np.array([0]) * u.km/u.s,
+        ),
+        'north_outer_best': FitPars(
+            np.array([500]) * u.au,
+            np.array([2500]) * u.au,
+            np.array([500]) * u.au,
+            np.array([80]) * u.deg,
+            np.array([55]) * u.deg,
+            np.array([0]) * u.km/u.s,
+        ),
+        'north_inner_best': FitPars(
+            np.array([475]) * u.au,
+            np.array([500]) * u.au,
+            np.array([475]) * u.au,
+            np.array([89]) * u.deg,
+            np.array([155]) * u.deg,
+            np.array([0]) * u.km/u.s,
+        ),
+        'south_best': FitPars(
+            np.array([500]) * u.au,
+            np.array([2500]) * u.au,
+            np.array([500]) * u.au,
+            np.array([80]) * u.deg,
+            np.array([280]) * u.deg,
+            np.array([2]) * u.km/u.s,
+        ),
+    }
 
     # Source properties
-    position = SkyCoord('16h35m9.26085s -48d46m47.65854s', frame=ICRS)
+    #position = SkyCoord('16h35m9.26085s -48d46m47.65854s', frame=ICRS)
+    position = SkyCoord('16h35m9.2585s -48d46m47.661s', frame=ICRS)
     distance = 3.1 * u.kpc
     v_lsr = -47.2 * u.km/u.s
     obs_data = ObsData(
         position,
         moment1,
         continuum,
-        components={'north': (regions /
-                              'G336.01-0.82_north_stream_ch3oh_poly.crtf'),
-                    'south': (regions /
-                              'G336.01-0.82_south_stream_ch3oh_poly.crtf')},
-        spines={'north': regions / 'G336.01-0.82_north_stream_ch3oh.crtf',
-                'south': regions / 'G336.01-0.82_south_stream_ch3oh.crtf'}
+        #components={'north': (regions /
+        #                      'G336.01-0.82_north_stream_ch3oh_poly.crtf'),
+        #            'south': (regions /
+        #                      'G336.01-0.82_south_stream_ch3oh_poly.crtf')},
+        #spines={'north': regions / 'G336.01-0.82_north_stream_ch3oh.crtf',
+        #        'south': regions / 'G336.01-0.82_south_stream_ch3oh.crtf'}
     )
 
     # Model parameters
@@ -335,48 +397,40 @@ if __name__ == '__main__':
     #    np.array([0]) * u.km/u.s,
     #)
     # Small scale refinement
-    north_pars = FitPars(
-        np.array([475]) * u.au,
-        np.array([500]) * u.au,
-        np.array([475]) * u.au,
-        #np.array([85, 86, 87, 88, 89, 90]) * u.deg,
-        #np.array([150, 155, 160, 165, 170, 175, 180, 185, 190, 195]) * u.deg,
-        # For best
-        np.array([89]) * u.deg,
-        np.array([155]) * u.deg,
-        np.array([0]) * u.km/u.s,
-    )
-    #south_pars = FitPars(
+    #north_pars = FitPars(
+    #    np.array([475]) * u.au,
     #    np.array([500]) * u.au,
-    #    #np.array([1000, 1500, 2000, 2500, 3000]) * u.au,
-    #    np.array([2000, 2500, 3000, 3500, 4000]) * u.au,
-    #    np.array([500]) * u.au,
-    #    #np.array([40, 50, 60, 70]) * u.deg,
-    #    np.array([50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]) * u.deg,
-    #    #np.array([10, 20, 30, 40, 50, 60, 70, 80, 90, 110, 120]) * u.deg,
-    #    #np.array([255, 260, 265, 270, 275]) * u.deg,
-    #    #np.array([265, 270, 275, 280]) * u.deg,
-    #    np.array([270, 275, 280, 285, 290, 295, 300]) * u.deg,
-    #    #np.array([0, 2]) * u.km/u.s,
-    #    np.array([2]) * u.km/u.s,
+    #    np.array([475]) * u.au,
+    #    #np.array([85, 86, 87, 88, 89, 90]) * u.deg,
+    #    #np.array([150, 155, 160, 165, 170, 175, 180, 185, 190, 195]) * u.deg,
+    #    # For best
+    #    np.array([89]) * u.deg,
+    #    np.array([155]) * u.deg,
+    #    np.array([0]) * u.km/u.s,
     #)
-    model_pars = ModelPars(
-        position,
-        distance,
-        v_lsr,
-        10 * u.Msun,
-        #5 * u.Msun,
-        (90 - 65) * u.deg,
-        (125 + 90) * u.deg,
-        #components={'north': north_pars, 'south': south_pars},
-        components={'north': north_pars},
-        #components={'south': south_pars},
-        ranges={'north': (0, 2000, -53, -44),
-                'south': (0, 2000, -47, -40)}
-    )
 
-    # Iterate over model parameters
-    fit_streamer(obs_data, model_pars, figures)
+    # Run for each streamer
+    for streamer in streamers:
+        if 'north' in streamer:
+            components = {'north': stream_params[streamer]}
+        else:
+            components = {'south': stream_params[streamer]}
+        model_pars = ModelPars(
+            position,
+            distance,
+            v_lsr,
+            10 * u.Msun,
+            (90 - 65) * u.deg,
+            (125 + 90) * u.deg,
+            components=components,
+            ranges={'north': (0, 2000, -53, -44),
+                    'south': (0, 2000, -47, -40)}
+        )
+
+        # Iterate over model parameters
+        outdir = results / streamer / f'{streamer}_incl65_pa125'
+        outdir.mkdir(parents=True, exist_ok=True)
+        fit_streamer(obs_data, model_pars, outdir)
 
     # Create a reference coordinate system
     #center = SkyCoord(ra, dec, frame='icrs')
