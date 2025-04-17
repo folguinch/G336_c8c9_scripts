@@ -30,8 +30,6 @@ print('Peak coordinate: ', position.to_string(style='decimal', precision=10))
 # Source region for Gaussian fit
 region = REGIONS / 'central_source.crtf'
 if not region.exists():
-    #center = SkyCoord('16:35:09.2585735600', '-48:46:47.6579993356',
-    #                  unit=(u.hourangle, u.deg), frame='icrs')
     radius = Angle(0.05, u.arcsec)
     region = CircleSkyRegion(position, radius)
     region.write(REGIONS / 'central_source.crtf', format='crtf',
