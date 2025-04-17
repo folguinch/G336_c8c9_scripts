@@ -1,6 +1,6 @@
 """Calculate streamer models.
 
-Some of the functions were taken from the original implemetation of
+Some of the functions were taken from the original implementation of
 velocity_tools. Part of the code is a work in progress to fit a streamer, but
 the engine to calculate streamer models is working.
 """
@@ -39,9 +39,13 @@ class FitPars:
     theta0: npt.ArrayLike
     phi0: npt.ArrayLike
     v_r0: npt.ArrayLike
+    tied_r: bool = True
 
     def __iter__(self):
         for vals in product(*self._as_tuple()):
+            if self.tied_r and vals[0] != vals[2]:
+                print('Skipping model with rmin=', vals[0], ' and rc=', vals[2])
+                continue
             name = FitPars.generate_name(vals)
             yield name, vals
 
@@ -123,27 +127,6 @@ def get_vc_r(image_file, region_file, position, distance):
 
     return r_proj, v_los
 
-#def setup_plot(fig, center, radius=1.*u.arcsec, label_col='black',
-#               star_col='red', distance=None, marker=None):
-#    """
-#    Setup of plots, since they will show all the same format.
-#    """
-#    fig.set_system_latex(False)
-#    fig.ticks.set_color(label_col)
-#    fig.recenter(*center, radius=radius.to(u.deg).value)
-#    fig.set_nan_color('0.9')
-#    fig.add_beam(color=label_col)
-#    if distance is not None:
-#        ang_size = (500 / distance.to(u.pc).value) * u.arcsec
-#        fig.add_scalebar(ang_size, label='500 au', color=label_col)
-#    if marker is not None:
-#        fig.show_markers(*marker, marker='*', s=60, layer='star',
-#                         edgecolor=star_col, facecolor=label_col, zorder=31)
-#    fig.tick_labels.set_xformat('hh:mm:ss.ss')
-#    fig.tick_labels.set_yformat('dd:mm:ss.s')
-#    fig.ticks.set_length(7)
-#    fig.axis_labels.set_xtext(r'Right Ascension (J2000)')
-#    fig.axis_labels.set_ytext(r'Declination (J2000)')
 def plot_stream_map(obsdata, streamer, streamer_vel, filename, v_lsr):
     # Generate plot
     loc = (0, 0)
@@ -181,20 +164,6 @@ def plot_stream_map(obsdata, streamer, streamer_vel, filename, v_lsr):
                           )
 
     # Plot streamer
-    #points = np.array([streamer.ra.deg, streamer.dec.deg]).T.reshape(-1, 1, 2)
-    #segments = np.concatenate([points[:-1], points[1:]], axis=1)
-    #lc = LineCollection(segments, cmap='vik',
-    #                    norm=handler.vscale.get_normalization(),
-    #                    transform=handler.get_transform(),
-    #                    zorder=4)
-    ##lc.set_array(streamer_vel)
-    #lc.set(lw=6, array=streamer_vel[:-1].value, alpha=1,
-    #       #path_effects=[pe.Stroke(linewidth=6, foreground='k'), pe.Normal()],
-    #       )
-    ##print(lc.properties(), lc.get_fc())
-    #line = handler.ax.add_collection(lc)
-    #handler.plot(fil.ra.deg, fil.dec.deg, transform=handler.get_transform(),
-    #             lw=2, ls='-', )
     handler.scatter(streamer.ra, streamer.dec, c=streamer_vel.value,
                     cmap='vik', norm=handler.vscale.get_normalization(),
                     zorder=5)
@@ -208,43 +177,12 @@ def plot_stream_map(obsdata, streamer, streamer_vel, filename, v_lsr):
                       map_plot.axes[loc].cborientation)
     map_plot.savefig(filename)
 
-def convert_into_mili(file_name):
-    """
-    It converts a file into one rescaled by 1e3.
-    This is useful to convert between Jy -> mJy or m/s into km/s
-    for plotting purposes (e.g. to use with aplpy).
-
-    Usage:
-    fig = aplpy.FITSFigure(convert_into_mili(file_in_Jy), figsize=(4,4))
-    fig.show_colorscale(vmin=0, vmax=160, cmap='inferno')
-    fig.add_colorbar()
-    fig.colorbar.set_axis_label_text(r'Integrated Intensity (mJy beam$^{-1}$ km s$^{-1}$)')
-
-    :param file_name: string with filename to process
-    :return: hdu
-    """
-    data, hd = fits.getdata(file_name, header=True)
-    return fits.PrimaryHDU(data=data*1e3, header=hd)
-
 def fit_streamer(data: ObsData, model: ModelPars, outdir: Path):
     """Fit a streamer (work in progress).
     """
     # Iterate components
     for name, component in model:
         print(f'Fitting component: {name}')
-        # Compute observed KDE
-        #r_proj, v_los = get_vc_r(data.moment1, data.components[name],
-        #                         data.position, model.distance)
-        #xmin, xmax, velmin, velmax = model.ranges[name]
-        #xx, vv = np.mgrid[xmin:xmax:100j, velmin:velmax:100j]
-        #positions = np.vstack([xx.ravel(), vv.ravel()])
-        #
-        #gd_vlos = np.isfinite(r_proj * v_los)
-        #values = np.vstack([r_proj[gd_vlos].value, v_los[gd_vlos].value])
-        #kernel = stats.gaussian_kde(values)
-        #kernel = np.reshape(kernel(positions).T, xx.shape)
-        #kernel /= kernel.max()
-
         # Iterate models
         for fname, vals in component:
             # Output region
@@ -256,15 +194,16 @@ def fit_streamer(data: ObsData, model: ModelPars, outdir: Path):
 
             # Parameters
             rmin, r0, rc, theta0, phi0, v_r0 = vals
-            if rmin != rc:
-                print('Skipping model with rmin=', rmin, ' and rc=', rc)
-                continue
+            #if rmin != rc:
+            #    print('Skipping model with rmin=', rmin, ' and rc=', rc)
+            #    continue
             omega0 = np.sqrt(rc * ct.G * model.Mstar) / r0**2
             omega0 = omega0.to(1 / u.s)
             if np.abs(rmin - r0) < 100*u.au:
                 r_step = 0.1 * u.au
             else:
                 r_step = 10 * u.au
+            r_step = 0.1 * u.au
 
             # Stream model
             (dra, _, ddec), (_, vel, _) = SL.xyz_stream(
@@ -312,19 +251,23 @@ if __name__ == '__main__':
     continuum = (CONTINUUM /
                  ('G336.018-0.827.c8c9.selfcal.cvel.cont_avg.hogbom.'
                   'briggs.robust0.5.image.fits'))
-    #regions = basedir / 'scripts/configs/pvmaps/regions'
-    #moment0 = results / 'CH3OH_18_3_15_-17_4_14_A_vt_0_b6_c8c9_spw0_520_590_width40_nsig3.subcube.moment0.fits'
-
-    ## Streamers
-    #region_files = [regions / 'north_streamer_5sigma_poly.crtf',
-    #                regions / 'south_streamer_5sigma_poly.crtf']
+    # In FERIA standard
+    disk_pa_orig = 125 * u.deg
+    disk_incl_orig = 65 * u.deg # 0 face-on
+    # In velocity_tools standard
+    # The rotation direction is set by the outflow axis. For clockwise this
+    # should point south.
+    disk_pa = 90 * u.deg + disk_pa_orig # rotation axis 
+    disk_incl = 90 * u.deg - disk_incl_orig # 0 edge-on
 
     # Fit pars
     # For parameter exploration
     #streamers = ['north_outer', 'north_inner']
     # For best models
-    streamers = ['north_outer', 'north_inner', 'north_outer_best',
-                 'north_inner_best', 'south_best']
+    streamers = ['north_outer_best',
+                 'north_inner_best',
+                 'south_best']
+    streamers = ['north_outer_best']
     stream_params = {
         'north_outer': FitPars(
             np.array([400, 450, 500, 550, 600]) * u.au,
@@ -335,14 +278,33 @@ if __name__ == '__main__':
             np.array([0]) * u.km/u.s,
         ),
         'north_inner': FitPars(
-            #np.array([200, 300, 400, 450, 470, 475, 480]) * u.au,
-            np.array([475]) * u.au,
+            # Following central source radius and pv map 
+            np.array([60, 200]) * u.au,
             np.array([500]) * u.au,
-            np.array([475]) * u.au,
-            np.array([85, 86, 87, 88, 89, 90]) * u.deg,
-            np.array([150, 155, 160, 165, 170, 175, 180, 185, 190, 195]) * u.deg,
-            np.array([0]) * u.km/u.s,
+            # Following central source radius and pv map
+            np.array([60, 200]) * u.au,
+            np.array([85, 88, 89]) * u.deg,
+            # First round
+            #np.array([150, 155, 160, 165, 170, 175, 180, 185, 190, 195]) * u.deg,
+            # Second round
+            #np.array([140, 145, 150, 155, 160, 165]) * u.deg,
+            np.array([140, 145, 150, 155]) * u.deg,
+            np.array([0, 0.1, 0.25, 0.5, 0.75]) * u.km/u.s,
         ),
+        #'north_inner_untied': FitPars(
+        #    #np.array([200, 300, 400, 450, 470, 475, 480]) * u.au,
+        #    np.array([200]) * u.au,
+        #    np.array([500]) * u.au,
+        #    np.array([60]) * u.au,
+        #    np.array([85, 88, 89]) * u.deg,
+        #    # First round
+        #    #np.array([150, 155, 160, 165, 170, 175, 180, 185, 190, 195]) * u.deg,
+        #    # Second round
+        #    #np.array([140, 145, 150, 155, 160, 165]) * u.deg,
+        #    np.array([145, 155]) * u.deg,
+        #    np.array([0, 0.5, 1]) * u.km/u.s,
+        #    tied_r=False,
+        #),
         'north_outer_best': FitPars(
             np.array([500]) * u.au,
             np.array([2500]) * u.au,
@@ -352,12 +314,12 @@ if __name__ == '__main__':
             np.array([0]) * u.km/u.s,
         ),
         'north_inner_best': FitPars(
-            np.array([475]) * u.au,
+            np.array([200]) * u.au,
             np.array([500]) * u.au,
-            np.array([475]) * u.au,
+            np.array([200]) * u.au,
             np.array([89]) * u.deg,
-            np.array([155]) * u.deg,
-            np.array([0]) * u.km/u.s,
+            np.array([145]) * u.deg,
+            np.array([0.1]) * u.km/u.s,
         ),
         'south_best': FitPars(
             np.array([500]) * u.au,
@@ -370,7 +332,6 @@ if __name__ == '__main__':
     }
 
     # Source properties
-    #position = SkyCoord('16h35m9.26085s -48d46m47.65854s', frame=ICRS)
     position = SkyCoord('16h35m9.2585s -48d46m47.661s', frame=ICRS)
     distance = 3.1 * u.kpc
     v_lsr = -47.2 * u.km/u.s
@@ -378,36 +339,7 @@ if __name__ == '__main__':
         position,
         moment1,
         continuum,
-        #components={'north': (regions /
-        #                      'G336.01-0.82_north_stream_ch3oh_poly.crtf'),
-        #            'south': (regions /
-        #                      'G336.01-0.82_south_stream_ch3oh_poly.crtf')},
-        #spines={'north': regions / 'G336.01-0.82_north_stream_ch3oh.crtf',
-        #        'south': regions / 'G336.01-0.82_south_stream_ch3oh.crtf'}
     )
-
-    # Model parameters
-    # Large scale refinement
-    #north_pars = FitPars(
-    #    np.array([500]) * u.au,
-    #    np.array([2500]) * u.au,
-    #    np.array([500]) * u.au,
-    #    np.array([75, 80, 85]) * u.deg,
-    #    np.array([50, 55, 60, 65, 70]) * u.deg,
-    #    np.array([0]) * u.km/u.s,
-    #)
-    # Small scale refinement
-    #north_pars = FitPars(
-    #    np.array([475]) * u.au,
-    #    np.array([500]) * u.au,
-    #    np.array([475]) * u.au,
-    #    #np.array([85, 86, 87, 88, 89, 90]) * u.deg,
-    #    #np.array([150, 155, 160, 165, 170, 175, 180, 185, 190, 195]) * u.deg,
-    #    # For best
-    #    np.array([89]) * u.deg,
-    #    np.array([155]) * u.deg,
-    #    np.array([0]) * u.km/u.s,
-    #)
 
     # Run for each streamer
     for streamer in streamers:
@@ -420,29 +352,17 @@ if __name__ == '__main__':
             distance,
             v_lsr,
             10 * u.Msun,
-            (90 - 65) * u.deg,
-            (125 + 90) * u.deg,
+            disk_incl,
+            disk_pa,
             components=components,
             ranges={'north': (0, 2000, -53, -44),
                     'south': (0, 2000, -47, -40)}
         )
 
         # Iterate over model parameters
-        outdir = results / streamer / f'{streamer}_incl65_pa125'
+        outdir = results / streamer
+        outdir = outdir / (f'{streamer}_incl{disk_incl_orig.value:g}'
+                           f'_pa{disk_pa_orig.value:g}')
         outdir.mkdir(parents=True, exist_ok=True)
         fit_streamer(obs_data, model_pars, outdir)
-
-    # Create a reference coordinate system
-    #center = SkyCoord(ra, dec, frame='icrs')
-    #refframe = center.skyoffset_frame()
-
-
-    #stream_model = {'ra': fil.ra.value*u.deg, 'dec': fil.dec.value*u.deg,
-    #                'd_sky_au': d_sky_au, 'vlsr': v_lsr + vy1}
-    #with open(stream_pickle, 'wb') as f:
-    #    pickle.dump(stream_model, f)
-    #
-    #KDE_vel_rad = {'radius': xx, 'v_lsr': yy, 'dens': zz}
-    #with open(vlsr_rad_kde_pickle, 'wb') as f:
-    #    pickle.dump(KDE_vel_rad, f)
 

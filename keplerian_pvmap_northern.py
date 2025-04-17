@@ -1,6 +1,7 @@
 """Generate projected Keplerian veolocities for PV."""
 from pathlib import Path
 
+from astropy.table import QTable
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from line_little_helper.pvmap_extractor import get_spectral_slab
@@ -39,13 +40,21 @@ cube = DATA / 'cubes/G336.018-0.827_spw0_CH3OH_robust2_multiscale.image.fits'
 pvmap_file = (RESULTS / 'G336.01-0.82/c8c9/pvmaps' /
               'G336_north_streamer_inverted_CH3OH_spw0.fits')
 region = CONFIGS / 'pvmaps/regions/G336_north_streamer_inverted.crtf'
-figures = FIGURES / 'G336.01-0.82/c8c9/paper'
+figures = FIGURES / 'G336.01-0.82/c8c9/papers'
+results = RESULTS / 'G336.01-0.82/c8c9/CH3OH'
+outer_streamer = (results /
+                  'north_outer_best/north_outer_best_incl65_pa125/regions/'
+                  'stream_north_rmin500_r02500_rc500_theta080_phi055_vr00.ecsv')
+inner_streamer = (results /
+                  'north_inner_best/north_inner_best_incl65_pa125/regions/'
+                  'stream_north_rmin200_r0500_rc200_theta089_phi0145_vr00.1.ecsv')
 
 # Source parameters
-source = SkyCoord('16h35m09.2587s -48d46m47.657s', frame='icrs')
+source = SkyCoord('16h35m09.2585s -48d46m47.661s', frame='icrs')
 mass = 10 * u.M_sun
 incl = 65 * u.deg
-pa = 125 * u.deg
+#pa = 125 * u.deg
+pa = -55 * u.deg
 rcb = 250 * u.au
 distance = 3.1 * u.kpc
 vlsr = -47.2 * u.km / u.s
@@ -77,10 +86,14 @@ proj_d = source.separation(positions).to(u.arcsec)
 pa_point = source.position_angle(positions).to(u.deg)
 
 # De-project distance
-# Verified using https://ui.adsabs.harvard.edu/abs/2012A%26A...547A..84T/abstract
+# Velocity deprojection verified using Tang et al. (2012)
+# https://ui.adsabs.harvard.edu/abs/2012A%26A...547A..84T/abstract
 # Note that definition of the azimuthal angle phi is inverted with respect to
-# that paper so the velocity directions are inverted here
-phi = 180 * u.deg + pa - pa_point
+# that paper so the velocity directions are inverted here.
+# Uncomment/comment the values below to change between the conventions.
+# Published results use the Tang et al. convention as it is the same as FERIA.
+#phi = 180 * u.deg + pa - pa_point
+phi = pa_point - pa
 deproj_d = proj_d * np.sqrt((np.sin(phi)/np.cos(incl))**2 + 
                             np.cos(phi)**2)
 deproj_d = deproj_d.to(u.arcsec).value * distance.to(u.pc).value * u.au
@@ -88,16 +101,26 @@ proj_d = proj_d.to(u.arcsec).value * distance.to(u.pc).value * u.au
 
 # Keplerian velocity
 vel_kp = rot * np.sqrt(ct.G * mass / deproj_d).to(u.km / u.s)
+#proj_vel_kp = vel_kp * np.sin(incl) * np.cos(phi)
+# Tang et al. (2012) check
 proj_vel_kp = vel_kp * np.sin(incl) * np.cos(phi)
 
 # Infall + Keplerian
-vel_inf = np.sqrt(2 * ct.G * mass / deproj_d).to(u.km / u.s)
+#vel_inf = np.sqrt(2 * ct.G * mass / deproj_d).to(u.km / u.s)
+#proj_vel_kp_inf = (vel_kp * np.sin(incl) * np.cos(phi) +
+#                   vel_inf * np.sin(incl) * np.sin(phi))
+# Tang et al. (2012) check
+vel_inf = -np.sqrt(2 * ct.G * mass / deproj_d).to(u.km / u.s)
 proj_vel_kp_inf = (vel_kp * np.sin(incl) * np.cos(phi) +
                    vel_inf * np.sin(incl) * np.sin(phi))
 
 # IRE
 vel_rot = rot * np.sqrt(2 * ct.G * mass * rcb) / deproj_d
-vel_inf = np.sqrt(2 * ct.G * mass * (deproj_d - rcb)) / deproj_d
+#vel_inf = np.sqrt(2 * ct.G * mass * (deproj_d - rcb)) / deproj_d
+#proj_vel_ire = (vel_rot * np.sin(incl) * np.cos(phi) +
+#                vel_inf * np.sin(incl) * np.sin(phi))
+# Tang et al. (2012) check
+vel_inf = -np.sqrt(2 * ct.G * mass * (deproj_d - rcb)) / deproj_d
 proj_vel_ire = (vel_rot * np.sin(incl) * np.cos(phi) +
                 vel_inf * np.sin(incl) * np.sin(phi))
 proj_vel_ire[deproj_d < rcb] = proj_vel_kp[deproj_d < rcb]
@@ -123,6 +146,32 @@ def forward(x):
 def inverse(x):
     return np.interp(x, deproj_d.value, dist)
 
+# Streamers
+outer_streamer = QTable.read(outer_streamer, format='ascii.ecsv')
+outer_streamer_positions = SkyCoord(outer_streamer['ra'],
+                                    outer_streamer['dec'],
+                                    frame='icrs')
+outer_streamer_proj_d = source.separation(outer_streamer_positions).to(u.arcsec)
+outer_streamer_pa_point = source.position_angle(outer_streamer_positions).to(u.deg)
+outer_streamer_phi = 180 * u.deg + pa - outer_streamer_pa_point
+outer_streamer_deproj_d = (outer_streamer_proj_d *
+                           np.sqrt((np.sin(outer_streamer_phi)/np.cos(incl))**2 + 
+                                   np.cos(outer_streamer_phi)**2))
+outer_streamer_deproj_d = (outer_streamer_deproj_d.to(u.arcsec).value *
+                           distance.to(u.pc).value * u.au)
+inner_streamer = QTable.read(inner_streamer, format='ascii.ecsv')
+inner_streamer_positions = SkyCoord(inner_streamer['ra'],
+                                    inner_streamer['dec'],
+                                    frame='icrs')
+inner_streamer_proj_d = source.separation(inner_streamer_positions).to(u.arcsec)
+inner_streamer_pa_point = source.position_angle(inner_streamer_positions).to(u.deg)
+inner_streamer_phi = 180 * u.deg + pa - inner_streamer_pa_point
+inner_streamer_deproj_d = (inner_streamer_proj_d *
+                           np.sqrt((np.sin(inner_streamer_phi)/np.cos(incl))**2 + 
+                                   np.cos(inner_streamer_phi)**2))
+inner_streamer_deproj_d = (inner_streamer_deproj_d.to(u.arcsec).value *
+                           distance.to(u.pc).value * u.au)
+
 # Plot
 fontsize = 8
 ratio = 11 / 5
@@ -137,21 +186,28 @@ ax.set_xlabel('Distance along streamer path (au)')
 ax.set_ylabel('Velocity (km/s)')
 ax.set_ylim(10, -15)
 ax.set_xlim(0, 1500)
-ax.axvline(inverse(500), linewidth=1.5, color='#1ae6ed')
-ax.annotate('$R_c$', (0.35, 0.9), color='#1ae6ed', xytext=(0.35, 0.9),
+ax.axvline(inverse(500), linewidth=1.5, color='#66ccff')
+ax.annotate('$R_c$', (0.35, 0.9), color='#66ccff', xytext=(0.35, 0.9),
             xycoords='axes fraction', size=fontsize)
-ax.annotate('Inner', (0.27, 0.1), color='#1ae6ed', xytext=(0.27, 0.1),
+ax.annotate('Inner', (0.27, 0.1), color='#66ccff', xytext=(0.27, 0.1),
             xycoords='axes fraction', size=fontsize)
-ax.annotate('Outer', (0.35, 0.1), color='#1ae6ed', xytext=(0.35, 0.1),
+ax.annotate('Outer', (0.35, 0.1), color='#66ccff', xytext=(0.35, 0.1),
             xycoords='axes fraction', size=fontsize)
-line1, = ax.plot(dist, proj_vel_kp.to(u.km/u.s).value, ls='-', color='#6adb02',
+line1, = ax.plot(dist, proj_vel_kp.to(u.km/u.s).value, ls='-', color='#009900',
                  lw=1.5)
 line2, = ax.plot(dist, proj_vel_kp_inf.to(u.km/u.s).value, ls=':',
-                 color='#6adb02', lw=1.5)
+                 color='#009900', lw=1.5)
 line3, = ax.plot(dist, proj_vel_ire.to(u.km/u.s).value, ls='--',
-                 color='#6adb02', lw=1.5)
-ax.legend([line1, line2, line3],
-          ['Keplerian rotation', 'Keplerian + free-fall', 'IRE'],
+                 color='#009900', lw=1.5)
+line4, = ax.plot(inverse(outer_streamer_deproj_d.value),
+                 outer_streamer['vlsr'].to(u.km/u.s).value,
+                 ls='-.', color='#3366ff', lw=1.5)
+line5, = ax.plot(inverse(inner_streamer_deproj_d.value),
+                 inner_streamer['vlsr'].to(u.km/u.s).value,
+                 ls='-.', color='#3366ff', lw=1.5)
+ax.legend([line1, line2, line3, line4, line5],
+          ['Keplerian rotation', 'Keplerian + free-fall', 'IRE',
+           'Outer streamline', 'Inner streamline'],
           fontsize=fontsize,
           labelcolor='#6adb02')
 ax.tick_params(length=4, color='w', top=False)
