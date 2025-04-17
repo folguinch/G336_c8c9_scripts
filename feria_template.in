@@ -1,0 +1,56 @@
+$cubename	# Name of the output fits file, 'parameter' to name after the parameters
+n           # Overwrite? (y/n)
+
+### Parameters for the source ###
+$object         			# Name of the object
+ICRS						# Equinox or Radesys ('J2000' or 'ICRS')
+$ra         				# Right Ascension of the field center
+$dec        				# Declination of the field center
+$vsys             			# Systemic Velocity (km/s)
+
+### Parameters for the line ###
+$line						# Name of the line
+$restfreq					# Restfrequency of the line (GHz)
+
+
+### Parameters for the mesh ###
+$pixsize    # Pixel size (arcsec)
+$velres		# Velocity resolution (km/s)
+
+### Parameters for IRE ###
+$distance   # Distance to the source (pc)
+$mass 		# Protostellar mass (Msun)
+$rcb    	# Radius of the centrifugal barrier (au)
+$incl		# Inclination angle of the disk/envelope system (degree; 0 deg for a face-on configuration)
+$pa			# Position angle of the line along which the disk/envelope system is extended
+$rot		# Direction of the rotation: 1 for counterclockwise, -1 for clockwise for the inclination angle of 0 deg
+$rout		# Outer radius of the infalling-rotating envelope
+$rin		# Inner radius of the infalling-rotating envelope
+
+$ireheight	# Scale height of the infalling-rotating envelope
+$ireflare   # Flared angle of the scale height of the infalling-rotating envelope
+$irenprof	# Density profile (IRE): log(n(X)) / log(r)
+$iretprof	# Temperature profile (IRE): log(T) / log(r)
+
+$kepheight	# Scale height of the Keplerian disk
+$kepflare	# Flared degree of the scale hight of the Keplerian disk
+$kepnprof	# Density profile (Kepler): log(n(X)) / log(r)
+$keptprof	# Temperature profile (Kepler): log(T) / log(r)
+
+$cbdens		# Molecular density at the centrifugal barrier (cm^-3)
+$cbtemp     # Temperature at the centrifugal barrier (K)
+
+
+$lw			# Linewidth (km/s) (FWHM)
+$bmaj		# Beam size: major axis (arcsec)
+$bmin		# Beam size: minor axis (arcsec)
+$bpa		# Beam: position angle of the major axis (degree)
+
+y			# Normalize the intensity by the maximum value in the cube? (y/n)
+
+### the position axis in the PV diagram ###
+$pvpa		# position angle of the position axis (deg)
+$pvra   	# offset in RA for the origin of the position axis (au)
+$pvdec		# offset in Dec for the origin of the position axis (au)
+
+
