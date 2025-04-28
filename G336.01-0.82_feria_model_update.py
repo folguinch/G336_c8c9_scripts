@@ -60,7 +60,7 @@ phys_pars = {'distance': ['3100'], # pc
              'bpa': ['-29.07']
              }
 
-pv_pars = {'pvpa': ['125'],
+pv_pars = {'pvpa': ['-55'],
            'pvra': ['0.0'],
            'pvdec': ['0.0']}
 
