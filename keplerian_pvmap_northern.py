@@ -1,4 +1,4 @@
-"""Generate projected Keplerian veolocities for PV."""
+"""Plot projected velocities over blue shifted streamer PV."""
 from pathlib import Path
 
 from astropy.table import QTable
@@ -38,7 +38,7 @@ if 'Myriad Pro' in fonts:
 # Directories
 cube = DATA / 'cubes/G336.018-0.827_spw0_CH3OH_robust2_multiscale.image.fits'
 pvmap_file = (RESULTS / 'G336.01-0.82/c8c9/pvmaps' /
-              'G336_north_streamer_inverted_CH3OH_spw0.fits')
+              'G336_north_streamer_inverted_CH3OH_spw0_blue.fits')
 region = CONFIGS / 'pvmaps/regions/G336_north_streamer_inverted.crtf'
 figures = FIGURES / 'G336.01-0.82/c8c9/papers'
 results = RESULTS / 'G336.01-0.82/c8c9/CH3OH'
@@ -153,7 +153,8 @@ outer_streamer_positions = SkyCoord(outer_streamer['ra'],
                                     frame='icrs')
 outer_streamer_proj_d = source.separation(outer_streamer_positions).to(u.arcsec)
 outer_streamer_pa_point = source.position_angle(outer_streamer_positions).to(u.deg)
-outer_streamer_phi = 180 * u.deg + pa - outer_streamer_pa_point
+#outer_streamer_phi = 180 * u.deg + pa - outer_streamer_pa_point
+outer_streamer_phi = outer_streamer_pa_point - pa
 outer_streamer_deproj_d = (outer_streamer_proj_d *
                            np.sqrt((np.sin(outer_streamer_phi)/np.cos(incl))**2 + 
                                    np.cos(outer_streamer_phi)**2))
@@ -165,7 +166,8 @@ inner_streamer_positions = SkyCoord(inner_streamer['ra'],
                                     frame='icrs')
 inner_streamer_proj_d = source.separation(inner_streamer_positions).to(u.arcsec)
 inner_streamer_pa_point = source.position_angle(inner_streamer_positions).to(u.deg)
-inner_streamer_phi = 180 * u.deg + pa - inner_streamer_pa_point
+#inner_streamer_phi = 180 * u.deg + pa - inner_streamer_pa_point
+inner_streamer_phi = inner_streamer_pa_point - pa
 inner_streamer_deproj_d = (inner_streamer_proj_d *
                            np.sqrt((np.sin(inner_streamer_phi)/np.cos(incl))**2 + 
                                    np.cos(inner_streamer_phi)**2))
@@ -174,7 +176,6 @@ inner_streamer_deproj_d = (inner_streamer_deproj_d.to(u.arcsec).value *
 
 # Plot
 fontsize = 8
-ratio = 11 / 5
 width = 5.67
 height = 2.9
 plt.style.use(styles)
@@ -184,7 +185,7 @@ ax.imshow(pv_map.data, extent=extent, origin='lower')
 ax.set_aspect('auto')
 ax.set_xlabel('Distance along streamer path (au)')
 ax.set_ylabel('Velocity (km/s)')
-ax.set_ylim(10, -15)
+ax.set_ylim(4, -12)
 ax.set_xlim(0, 1500)
 ax.axvline(inverse(500), linewidth=1.5, color='#66ccff')
 ax.annotate('$R_c$', (0.35, 0.9), color='#66ccff', xytext=(0.35, 0.9),
@@ -201,15 +202,15 @@ line3, = ax.plot(dist, proj_vel_ire.to(u.km/u.s).value, ls='--',
                  color='#009900', lw=1.5)
 line4, = ax.plot(inverse(outer_streamer_deproj_d.value),
                  outer_streamer['vlsr'].to(u.km/u.s).value,
-                 ls='-.', color='#3366ff', lw=1.5)
+                 ls=(0, (3, 1, 1, 1)), color='#3366ff', lw=1.5)
 line5, = ax.plot(inverse(inner_streamer_deproj_d.value),
                  inner_streamer['vlsr'].to(u.km/u.s).value,
-                 ls='-.', color='#3366ff', lw=1.5)
+                 ls=(0, (3, 1, 1, 1, 1, 1)), color='#3366ff', lw=1.5)
 ax.legend([line1, line2, line3, line4, line5],
           ['Keplerian rotation', 'Keplerian + free-fall', 'IRE',
            'Outer streamline', 'Inner streamline'],
           fontsize=fontsize,
-          labelcolor='#6adb02')
+          labelcolor=['#009900', '#009900', '#009900', '#3366ff', '#3366ff'])
 ax.tick_params(length=4, color='w', top=False)
 secax = ax.secondary_xaxis('top', functions=(forward, inverse))
 secax.xaxis.set_minor_locator(AutoMinorLocator())
