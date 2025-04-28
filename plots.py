@@ -37,7 +37,7 @@ if __name__ == '__main__':
         5: 'streamers',
         6: 'composite',
     }
-    skip = [3, 2, 4, 5, 6]
+    skip = [1, 2, 4, 5, 6]
 
     # Read sources from command line
     sources = ['G336.01-0.82']
