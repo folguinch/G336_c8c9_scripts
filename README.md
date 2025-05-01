@@ -6,16 +6,19 @@ These scripts are for processing and plotting the results of the combined ALMA 1
 
 The scripts have been run with the following packages:
 
-- CASA (v6.6.3) (with the exception of the calibrated data, which uses the version specified by the weblog)
+- `CASA` (v6.6.3) (with the exception of the calibrated data, which uses the version specified by the weblog)
 - [tile_plotter](https://github.com/folguinch/tile_plotter) (v0.2.0)
 - [line_little_helper](https://github.com/folguinch/line_little_helper) (v0.2.0)
 - [astro_source](https://github.com/folguinch/astro_source) (v0.3.1)
+- [goco-helpers](https://github.com/folguinch/goco-helpers) (v0.1.0)
 - [GoContinuum](https://github.com/folguinch/GoContinuum) (v3.0.0)
 - [velocity_tools](https://github.com/jpinedaf/velocity_tools/tree/v1.1) (v1.1)
-- [yclean]() (v2.3.0)
+- `YCLEAN` (v2.3.0)
 
-Other dependences are usually installed by the codes above, and include `numpy` (v1.26.4), `astropy` (v6.0.1),
-`spectral-cube` (v0.6.5) and `matplotlib` (v3.9.2)
+Other dependencies are usually installed by the codes above, and include `numpy` (v1.26.4), `astropy` (v6.0.1),
+`spectral-cube` (v0.6.5) and `matplotlib` (v3.9.2).
+
+For the IRE models, a working version of [FERIA](https://github.com/YokoOya/FERIA) is needed.
 
 ## Scripts for published results
 
@@ -32,6 +35,8 @@ The following scripts were used to produce the results in Olguin et al. (2025):
 - `source_pipeline.py`: Process the data cubes for CH3OH and SO to obtain moment and pv maps.
 - `keplerian_pvmap_northern.py`: Generates and plots the pv map for the blue-shifted streamer.
 - `plots.py`: Generate most of the paper plots.
+- `paper_calculations.ipynb`: Contains the calculations for the **Replenishing times** section.
 
-To produce the contsub and line-free continuum vibilities we used `GoContinuum` with the configuration file `config/reduction/G336.018-0.827.cfg`.
+To produce the continuum subtracted and line-free continuum visibilities we used `GoContinuum` with the configuration file `config/reduction/G336.018-0.827.cfg`.
+For `YCLEAN`, modify the configuration file `config/reduction/G336.018-0.827_yclean.cfg` to compute the cubes.
 
