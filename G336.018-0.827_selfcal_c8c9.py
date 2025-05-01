@@ -1,7 +1,19 @@
+"""Self-calibration of combined data.
+
+C9 data was self-calibrated first with similar steps as the ones below (with
+the obvious exception of the coordinate correction). The model of the last
+tclen iteration of phase self-calibration is used below to align the the C8
+and C9 data.
+
+The `selfcal_helpers.py` module can be obtained from:
+    https://github.com/jjtobin/auto_selfcal/tree/main
+and `analysisUtils` from:
+    https://casaguides.nrao.edu/index.php/Analysis_Utilities
+"""
 import sys
 sys.path.append('./')
 from selfcal_helpers import rank_refants
-sys.path.append('/home/users/folguin/alma/analysis_scripts/')
+sys.path.append('~/alma/analysis_scripts/')
 import analysisUtils as au
 
 field = 'G336.018-0.827'
