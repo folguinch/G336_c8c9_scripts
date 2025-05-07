@@ -1,5 +1,7 @@
 # G336.01 scripts
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15314880.svg)](https://doi.org/10.5281/zenodo.15314880)
+
 These scripts are for processing and plotting the results of the combined ALMA 12m C8 and C9 data.
 
 ## Dependencies
@@ -13,7 +15,8 @@ The scripts have been run with the following packages:
 - [goco-helpers](https://github.com/folguinch/goco-helpers) (v0.1.0)
 - [GoContinuum](https://github.com/folguinch/GoContinuum) (v3.0.0)
 - [velocity_tools](https://github.com/jpinedaf/velocity_tools/tree/v1.1) (v1.1)
-- `YCLEAN` (v2.3.0)
+- [YCLEAN](https://zenodo.org/records/1216881) (v2.3.0)
+- [cmcrameri](https://zenodo.org/records/8409685) (v1.9) 
 
 Other dependencies are usually installed by the codes above, and include `numpy` (v1.26.4), `astropy` (v6.0.1),
 `spectral-cube` (v0.6.5) and `matplotlib` (v3.9.2).
