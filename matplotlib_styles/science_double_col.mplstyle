@@ -29,6 +29,6 @@ ytick.minor.right    : True   # draw y axis right minor ticks
 axes.linewidth      : 0.5
 
 ### FIGURE
-figure.dpi       : 300      # figure dots per inch
+figure.dpi       : 800      # figure dots per inch
 
 

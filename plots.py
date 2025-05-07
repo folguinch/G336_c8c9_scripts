@@ -34,10 +34,8 @@ if __name__ == '__main__':
         2: 'moments',
         3: 'split_moments',
         4: 'pv_maps',
-        5: 'streamers',
-        6: 'composite',
     }
-    skip = [1, 2, 4, 5, 6]
+    skip = [1, 2, 3]
 
     # Read sources from command line
     sources = ['G336.01-0.82']
